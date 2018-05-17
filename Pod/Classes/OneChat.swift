@@ -9,7 +9,6 @@
 import Foundation
 import XMPPFramework
 import CoreData
-import SystemConfiguration
 
 public typealias XMPPStreamCompletionHandler = (shouldTrustPeer: Bool?) -> Void
 public typealias OneChatAuthCompletionHandler = (stream: XMPPStream, error: DDXMLElement?) -> Void
@@ -132,9 +131,9 @@ public class OneChat: NSObject {
 		// The XMPPRoster will automatically integrate with XMPPvCardAvatarModule to cache roster photos in the roster.
 		
 		xmppvCardStorage = XMPPvCardCoreDataStorage.sharedInstance()
-		xmppvCardTempModule = XMPPvCardTempModule(withvCardStorage: xmppvCardStorage)
-		xmppvCardAvatarModule = XMPPvCardAvatarModule(withvCardTempModule: xmppvCardTempModule)
-		
+    xmppvCardTempModule = XMPPvCardTempModule(vCardStorage: xmppvCardStorage)
+    xmppvCardAvatarModule = XMPPvCardAvatarModule(vCardTempModule: xmppvCardTempModule)
+    
 		// Setup capabilities
 		//
 		// The XMPPCapabilities module handles all the complex hashing of the caps protocol (XEP-0115).
@@ -412,25 +411,4 @@ extension OneChat: XMPPStreamDelegate {
 	public func xmppStreamDidDisconnect(sender: XMPPStream, withError error: NSError) {
 		delegate?.oneStreamDidDisconnect(sender, withError: error)
 	}
-	
-	public func isConnectionAvailable() -> Bool {
-        	var zeroAddress = sockaddr_in()
-        	zeroAddress.sin_len = UInt8(sizeofValue(zeroAddress))
-        	zeroAddress.sin_family = sa_family_t(AF_INET)
-        
-        	guard let defaultRouteReachability = withUnsafePointer(&zeroAddress, {
-        		SCNetworkReachabilityCreateWithAddress(nil, UnsafePointer($0))
-        	}) else {
-            		return false
-        	}
-        
-        	var flags : SCNetworkReachabilityFlags = []
-        	if !SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags) {
-            		return false
-        	}
-        
-        	let isReachable = flags.contains(.Reachable)
-        	let needsConnection = flags.contains(.ConnectionRequired)
-        	return (isReachable && !needsConnection)
-    	}
 }
